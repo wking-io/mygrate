@@ -63,17 +63,8 @@ Required:
 
 Optional:
 
-- `PINTEREST_BOARD_IDS`: comma-separated Pinterest board IDs. When omitted, all accessible boards are used.
-- `PINTEREST_BOARD_PRIVACY`: one of `PUBLIC`, `PROTECTED`, or `SECRET` when listing boards.
-- `PINTEREST_PAGE_SIZE`: Pinterest pagination page size. Defaults to `250` and is capped at `250`.
-- `PINTEREST_MAX_PINS`: stop after this many Pins across all selected boards.
-- `MYMIND_SPACE_IDS`: comma-separated mymind space IDs to add uploaded images to.
-- `MYMIND_TAGS`: comma-separated tags added to every uploaded image. Defaults to `pinterest`.
-- `MYMIND_USER_AGENT`: user agent sent to mymind. Defaults to `creative-agent-pinterest-mymind/0.1`.
-- `MIGRATED_PINS_PATH`: local JSON file used by the picker to track imported Pin IDs. Defaults to `.data/migrated-pins.json`.
 - `DRY_RUN`: set to `1`, `true`, or `yes` to list import work without writing to mymind.
-- `PICKER_PORT`: local picker port. Defaults to `3421`.
-- `PORT`: server port for the Remix app. Takes precedence over `PICKER_PORT`.
+- `PORT`: local Remix picker port. Defaults to `3421`.
 
 ## Run The Visual Picker
 
@@ -161,7 +152,7 @@ This file is intentionally local-only and ignored by git. To use a different pat
 If the picker fails to start because the port is in use, choose another port:
 
 ```sh
-PICKER_PORT=3422 bun run picker
+PORT=3422 bun run picker
 ```
 
 If the picker reports an authentication or config error, check that `.env` exists and contains the three required credential values.

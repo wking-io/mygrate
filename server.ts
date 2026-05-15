@@ -32,11 +32,7 @@ function loadLocalEnv() {
   }
 }
 
-const port = process.env.PORT
-  ? Number.parseInt(process.env.PORT, 10)
-  : process.env.PICKER_PORT
-    ? Number.parseInt(process.env.PICKER_PORT, 10)
-    : 3421;
+const port = process.env.PORT ? Number.parseInt(process.env.PORT, 10) : 3421;
 
 const server = serve(
   async (request) => {
