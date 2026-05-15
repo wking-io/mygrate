@@ -23,11 +23,22 @@ const image = {
   description: "Image description",
 } satisfies PinImage;
 
-const runMyMind = <A>(effect: Effect.Effect<A, unknown, MyMindClient>) =>
-  Effect.runPromise(effect.pipe(Effect.provide(MyMindClientLive), Effect.provide(testConfigLayer({
-    mymindSpaceIds: ["space-1"],
-    mymindTags: ["pinterest", "archive"],
-  }))));
+const runMyMind = <A>(
+  effect: Effect.Effect<A, unknown, MyMindClient>,
+  overrides: Parameters<typeof testConfigLayer>[0] = {},
+) =>
+  Effect.runPromise(
+    effect.pipe(
+      Effect.provide(MyMindClientLive),
+      Effect.provide(
+        testConfigLayer({
+          mymindSpaceIds: ["A1B2c3D4e5F6g7H8i9J0K1"],
+          mymindTags: ["pinterest", "archive"],
+          ...overrides,
+        }),
+      ),
+    ),
+  );
 
 describe("MyMindClient", () => {
   test("creates image objects with metadata, file content, and signed auth", async () => {
@@ -75,7 +86,7 @@ describe("MyMindClient", () => {
     expect(captured).toMatchObject({
       url: "https://api.mymind.com/objects",
       method: "POST",
-      userAgent: "pinterest-mymind-test",
+      userAgent: "mygrate-test",
       filename: "pinterest-pin-1.png",
       blobType: "image/png",
       blobSize: 3,
@@ -87,10 +98,107 @@ describe("MyMindClient", () => {
           { name: "pinterest:Board One" },
           { name: "pinterest-pin:pin-1" },
         ],
-        spaces: [{ id: "space-1" }],
+        spaces: [{ id: "A1B2c3D4e5F6g7H8i9J0K1" }],
       },
     });
     expect(captured?.authorization).toStartWith("Bearer ");
+  });
+
+  test("truncates object titles to mymind's 100 character limit", async () => {
+    let capturedTitle: string | undefined;
+    const longTitle = "A".repeat(120);
+
+    globalThis.fetch = (async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      const body = init?.body as FormData;
+      const metadata = body.get("metadata");
+      capturedTitle = JSON.parse(await (metadata as Blob).text()).title;
+      return Response.json({ id: "object-1", title: "Created" });
+    }) as unknown as typeof fetch;
+
+    await runMyMind(
+      MyMindClient.use((client) =>
+        client.createImageObject({
+          board,
+          pin,
+          image: { ...image, title: longTitle },
+          imageBytes: new Uint8Array([1, 2, 3]),
+          mimeType: "image/png",
+        }),
+      ),
+    );
+
+    expect(capturedTitle).toHaveLength(100);
+    expect(capturedTitle).toBe(`${"A".repeat(97)}...`);
+  });
+
+  test("rejects unsupported upload content types before calling mymind", async () => {
+    let called = false;
+    globalThis.fetch = (async () => {
+      called = true;
+      return Response.json({ id: "object-1" });
+    }) as unknown as typeof fetch;
+
+    await expect(
+      runMyMind(
+        MyMindClient.use((client) =>
+          client.createImageObject({
+            board,
+            pin,
+            image,
+            imageBytes: new Uint8Array([1, 2, 3]),
+            mimeType: "image/x-png",
+          }),
+        ),
+      ),
+    ).rejects.toThrow("Unsupported mymind upload content type: image/x-png");
+    expect(called).toBe(false);
+  });
+
+  test("rejects uploads over mymind's 64 MB limit before calling mymind", async () => {
+    let called = false;
+    globalThis.fetch = (async () => {
+      called = true;
+      return Response.json({ id: "object-1" });
+    }) as unknown as typeof fetch;
+
+    await expect(
+      runMyMind(
+        MyMindClient.use((client) =>
+          client.createImageObject({
+            board,
+            pin,
+            image,
+            imageBytes: new Uint8Array(64 * 1024 * 1024 + 1),
+            mimeType: "image/png",
+          }),
+        ),
+      ),
+    ).rejects.toThrow("mymind upload is too large");
+    expect(called).toBe(false);
+  });
+
+  test("rejects invalid space ids before calling mymind", async () => {
+    let called = false;
+    globalThis.fetch = (async () => {
+      called = true;
+      return Response.json({ id: "object-1" });
+    }) as unknown as typeof fetch;
+
+    await expect(
+      runMyMind(
+        MyMindClient.use((client) =>
+          client.createImageObject({
+            board,
+            pin,
+            image,
+            imageBytes: new Uint8Array([1, 2, 3]),
+            mimeType: "image/png",
+          }),
+        ),
+        { mymindSpaceIds: ["not-a-mymind-id"] },
+      ),
+    ).rejects.toThrow('Invalid mymind space id "not-a-mymind-id"');
+    expect(called).toBe(false);
   });
 
   test("adds a markdown source note with board, pin, original link, and description", async () => {

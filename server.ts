@@ -47,7 +47,7 @@ const server = serve(
 );
 
 await server.ready;
-console.log(`Pinterest to mymind picker listening on http://localhost:${server.port}`);
+console.log(`mygrate listening on http://localhost:${server.port}`);
 
 let shuttingDown = false;
 

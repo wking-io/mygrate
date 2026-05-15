@@ -3,7 +3,7 @@ import { Effect, Layer } from "effect";
 
 import { ImportService, type ImportedImage } from "../core/ImportService.ts";
 import { type Board, type Pin, PinterestClient } from "../core/PinterestClient.ts";
-import { PinterestMyMindSync, PinterestMyMindSyncLive } from "../core/Sync.ts";
+import { MygrateSync, MygrateSyncLive } from "../core/Sync.ts";
 import { testConfigLayer } from "./helpers.ts";
 
 const boards: Board[] = [
@@ -22,7 +22,7 @@ const runSync = async (options: {
   maxPins?: number;
 }) => {
   const imported: string[] = [];
-  const layer = PinterestMyMindSyncLive.pipe(
+  const layer = MygrateSyncLive.pipe(
     Layer.provide(
       Layer.succeed(
         PinterestClient,
@@ -47,6 +47,7 @@ const runSync = async (options: {
                   imageUrl: `image:${pin.id}`,
                   objectId: `object:${pin.id}`,
                   dryRun: false,
+                  issues: [],
                 }),
               );
             }),
@@ -61,11 +62,11 @@ const runSync = async (options: {
     ),
   );
 
-  await Effect.runPromise(PinterestMyMindSync.use((sync) => sync.run).pipe(Effect.provide(layer)));
+  await Effect.runPromise(MygrateSync.use((sync) => sync.run).pipe(Effect.provide(layer)));
   return imported;
 };
 
-describe("PinterestMyMindSync", () => {
+describe("MygrateSync", () => {
   test("syncs all boards when no board filter is configured", async () => {
     await expect(runSync({})).resolves.toEqual([
       "board-1:pin-1",

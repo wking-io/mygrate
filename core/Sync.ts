@@ -9,12 +9,12 @@ export class SyncError extends Data.TaggedError("SyncError")<{
   cause?: unknown;
 }> {}
 
-export class PinterestMyMindSync extends Context.Service<
-  PinterestMyMindSync,
+export class MygrateSync extends Context.Service<
+  MygrateSync,
   {
     readonly run: Effect.Effect<void, SyncError>;
   }
->()("PinterestMyMindSync") {}
+>()("MygrateSync") {}
 
 const selectedBoards = (boards: ReadonlyArray<Board>, boardIds: ReadonlyArray<string>) => {
   if (boardIds.length === 0) {
@@ -24,14 +24,14 @@ const selectedBoards = (boards: ReadonlyArray<Board>, boardIds: ReadonlyArray<st
   return boardIds.map((id) => byId.get(id) ?? ({ id, name: id } satisfies Board));
 };
 
-export const PinterestMyMindSyncLive = Layer.effect(
-  PinterestMyMindSync,
+export const MygrateSyncLive = Layer.effect(
+  MygrateSync,
   Effect.gen(function* () {
     const config = yield* AppConfig;
     const pinterest = yield* PinterestClient;
     const importer = yield* ImportService;
 
-    return PinterestMyMindSync.of({
+    return MygrateSync.of({
       run: Effect.gen(function* () {
         const boards = selectedBoards(yield* pinterest.listBoards, config.pinterestBoardIds);
         yield* Effect.log(`Syncing ${boards.length} Pinterest board(s)`);
@@ -64,7 +64,7 @@ export const PinterestMyMindSyncLive = Layer.effect(
         Effect.mapError((cause) =>
           cause instanceof SyncError
             ? cause
-            : new SyncError({ message: "Pinterest to mymind sync failed", cause }),
+            : new SyncError({ message: "mygrate sync failed", cause }),
         ),
       ),
     });

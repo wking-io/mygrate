@@ -50,7 +50,7 @@ const AppConfigConfig = Config.all({
     Config.map((tags) => (tags.length > 0 ? tags : ["pinterest"])),
   ),
   mymindUserAgent: Config.string("MYMIND_USER_AGENT").pipe(
-    Config.withDefault("creative-agent-pinterest-mymind/0.1"),
+    Config.withDefault("mygrate/0.1"),
   ),
   dryRun: Config.string("DRY_RUN").pipe(
     Config.withDefault(""),

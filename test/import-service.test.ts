@@ -76,6 +76,7 @@ describe("ImportService", () => {
       imageUrl: "https://images.example/pin.jpg",
       objectId: undefined,
       dryRun: true,
+      issues: [],
     });
     expect(calls).toEqual([]);
   });
@@ -97,6 +98,7 @@ describe("ImportService", () => {
       imageUrl: "https://images.example/pin.jpg",
       objectId: "object-1",
       dryRun: false,
+      issues: [],
     });
     expect(calls).toEqual(["create:pin-1:image/png:3", "note:object-1:pin-1"]);
   });
@@ -129,6 +131,32 @@ describe("ImportService", () => {
       "note:object-1:pin-2",
       "create:pin-2:image/jpeg:1",
       "note:object-1:pin-2",
+    ]);
+  });
+
+  test("reports mitigations applied before creating mymind objects", async () => {
+    globalThis.fetch = (async () =>
+      new Response(new Uint8Array([1, 2, 3]), {
+        headers: { "Content-Type": "image/png" },
+      })) as unknown as typeof fetch;
+
+    const imported = await runImport(
+      ImportService.use((service) =>
+        service.importPinImage(board, pin, {
+          ...image,
+          title: "A".repeat(120),
+        }),
+      ),
+    );
+
+    expect(imported.issues).toEqual([
+      {
+        code: "title_truncated",
+        field: "title",
+        message: "Title was shortened to fit mymind's 100 character limit.",
+        original: "A".repeat(120),
+        adjusted: `${"A".repeat(97)}...`,
+      },
     ]);
   });
 });

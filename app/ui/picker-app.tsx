@@ -14,6 +14,20 @@ type PinView = {
   migrated: boolean;
 };
 
+type ImportIssue = {
+  code: string;
+  field: string;
+  message: string;
+  original?: string | number;
+  adjusted?: string | number;
+};
+
+type ImportedPin = {
+  pinId: string;
+  dryRun: boolean;
+  issues?: ImportIssue[];
+};
+
 type Filter = "unmigrated" | "migrated" | "all";
 
 const filters: Array<{ value: Filter; label: string }> = [
@@ -37,6 +51,7 @@ export const PickerApp = clientEntry(
     let loading = false;
     let status = "Loading";
     let message = "";
+    let importIssues: ImportIssue[] = [];
 
     void loadBoards();
 
@@ -75,6 +90,7 @@ export const PickerApp = clientEntry(
       loading = true;
       status = "Loading";
       message = "";
+      importIssues = [];
       handle.update();
       try {
         let body = await api<{ pins: PinView[] }>(
@@ -113,6 +129,7 @@ export const PickerApp = clientEntry(
       localStorage.setItem("pinFilter", filter);
       selected.clear();
       message = currentBoard && visiblePins().length === 0 ? "No pins match this filter." : "";
+      importIssues = [];
       handle.update();
     }
 
@@ -142,9 +159,10 @@ export const PickerApp = clientEntry(
       loading = true;
       status = "Importing";
       message = "";
+      importIssues = [];
       handle.update();
       try {
-        let body = await api<{ imported: Array<{ pinId: string; dryRun: boolean }> }>(
+        let body = await api<{ imported: ImportedPin[] }>(
           "/api/import",
           {
             method: "POST",
@@ -162,6 +180,7 @@ export const PickerApp = clientEntry(
         selected.clear();
         status = "Ready";
         message = `Imported ${body.imported.length} image${body.imported.length === 1 ? "" : "s"}.`;
+        importIssues = body.imported.flatMap((image) => image.issues ?? []);
       } catch (error) {
         status = "Error";
         message = error instanceof Error ? error.message : "Request failed";
@@ -182,6 +201,7 @@ export const PickerApp = clientEntry(
         loading,
         status,
         message,
+        importIssues,
         loadPins,
         setFilter,
         togglePin,
@@ -210,6 +230,7 @@ function serverState(): PickerState {
     loading: true,
     status: "Loading",
     message: "",
+    importIssues: [],
   };
 }
 
@@ -223,6 +244,7 @@ type PickerState = {
   loading: boolean;
   status: string;
   message: string;
+  importIssues: ImportIssue[];
   loadPins?: (board: BoardView) => void;
   setFilter?: (filter: Filter) => void;
   togglePin?: (pinId: string) => void;
@@ -242,7 +264,7 @@ function renderShell(state: PickerState): RemixNode {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <h1>Pinterest to mymind</h1>
+          <h1>mygrate</h1>
           <span className="status-pill">{state.status}</span>
         </div>
         <div className="board-list">
@@ -307,6 +329,19 @@ function renderShell(state: PickerState): RemixNode {
           </div>
         </div>
         <div className="message">{state.message}</div>
+        {state.importIssues.length > 0 ? (
+          <div className="issue-panel">
+            {state.importIssues.map((issue, index) => (
+              <div className="issue-row" key={`${issue.code}-${issue.field}-${index}`}>
+                <strong>{issue.field}</strong>
+                <span>{issue.message}</span>
+                {issue.adjusted !== undefined ? (
+                  <code>{String(issue.adjusted)}</code>
+                ) : undefined}
+              </div>
+            ))}
+          </div>
+        ) : undefined}
         <section className="grid" aria-live="polite">
           {state.visiblePins.map((pin) => renderPinCard(pin, state))}
         </section>

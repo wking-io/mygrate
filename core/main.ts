@@ -4,18 +4,18 @@ import { AppConfigLive } from "./Config";
 import { ImportServiceLive } from "./ImportService";
 import { MyMindClientLive } from "./MyMindClient";
 import { PinterestClientLive } from "./PinterestClient";
-import { PinterestMyMindSync, PinterestMyMindSyncLive } from "./Sync";
+import { MygrateSync, MygrateSyncLive } from "./Sync";
 
 const ClientsLive = Layer.mergeAll(PinterestClientLive, MyMindClientLive);
 
-const AppLive = PinterestMyMindSyncLive.pipe(
+const AppLive = MygrateSyncLive.pipe(
   Layer.provide(ImportServiceLive),
   Layer.provide(ClientsLive),
   Layer.provide(AppConfigLive),
 );
 
 const main = Effect.gen(function* () {
-  const sync = yield* PinterestMyMindSync;
+  const sync = yield* MygrateSync;
   yield* sync.run;
 });
 

@@ -8,7 +8,7 @@ import { render } from "../utils/render.tsx";
 export const app: BuildAction<"GET", typeof routes.home> = {
   handler({ request }) {
     return render(
-      <Document title="Pinterest to mymind">
+      <Document title="mygrate">
         <PickerApp />
       </Document>,
       request,

@@ -1,4 +1,4 @@
-# Pinterest to mymind
+# mygrate
 
 Pull Pins from Pinterest boards, download their images, and upload those images to mymind.
 
@@ -18,8 +18,8 @@ The package manager is Bun, but the Remix web server runs through Node via `tsx`
 1. Clone the repo and enter it:
 
 ```sh
-git clone https://github.com/wking-io/pinterest-mymind.git
-cd pinterest-mymind
+git clone https://github.com/wking-io/mygrate.git
+cd mygrate
 ```
 
 2. Install dependencies:
@@ -64,6 +64,7 @@ Required:
 Optional:
 
 - `DRY_RUN`: set to `1`, `true`, or `yes` to list import work without writing to mymind.
+- `LOG_LEVEL`: set to `debug` to show detailed span-tagged import logs. Defaults to `info`.
 - `PORT`: local Remix picker port. Defaults to `3421`.
 
 ## Run The Visual Picker
@@ -120,6 +121,33 @@ bun run test
 ```
 
 The tests mock external network calls, so they should not write to Pinterest or mymind.
+
+## Debug Import Failures
+
+The import route emits span-tagged logs around the import pipeline. To see detailed logs:
+
+```sh
+LOG_LEVEL=debug bun run picker
+```
+
+For a no-write smoke test:
+
+```sh
+DRY_RUN=1 LOG_LEVEL=debug bun run picker
+```
+
+When import fails, look for the shared `requestId` in the server output. The logs show each stage:
+
+- `api.import.decodePayload`: validates the selected board and Pin IDs from the browser.
+- `api.import`: resolves the board, fetches Pins from Pinterest, imports images, and writes migrated IDs.
+- `import.pins`: loops through selected Pins and image candidates.
+- `import.pin:<pinId>`: imports one Pin image.
+- `import.downloadImage`: downloads the image from Pinterest's image CDN.
+- `mymind.createImageObject`: creates the image object in mymind.
+- `mymind.addSourceNote`: adds the Pinterest source note to the mymind object.
+- `mymind.request:<method>:<path>`: sends the signed mymind API request.
+
+If the UI only shows a short error, the server log line with the same `requestId` includes the full error object.
 
 ## Project Structure
 

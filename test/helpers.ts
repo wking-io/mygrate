@@ -18,7 +18,7 @@ export const testConfig = (overrides: Partial<AppConfigShape> = {}): AppConfigSh
   ),
   mymindSpaceIds: [],
   mymindTags: ["pinterest"],
-  mymindUserAgent: "pinterest-mymind-test",
+  mymindUserAgent: "mygrate-test",
   dryRun: false,
   ...overrides,
 });
@@ -28,7 +28,7 @@ export const testConfigLayer = (overrides: Partial<AppConfigShape> = {}) =>
 
 export const withTempMigratedPinsPath = async <A>(run: (path: string) => Promise<A>) => {
   const previous = process.env.MIGRATED_PINS_PATH;
-  const dir = await mkdtemp(join(tmpdir(), "pinterest-mymind-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "mygrate-test-"));
   const path = join(dir, "nested", "migrated-pins.json");
   process.env.MIGRATED_PINS_PATH = path;
   try {

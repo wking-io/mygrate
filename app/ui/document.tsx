@@ -8,7 +8,7 @@ export interface DocumentProps {
 }
 
 export function Document() {
-  return ({ title = "Pinterest to mymind", children }: DocumentProps) => (
+  return ({ title = "mygrate", children }: DocumentProps) => (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />

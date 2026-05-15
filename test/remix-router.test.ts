@@ -9,7 +9,7 @@ describe("Remix router", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
-    expect(html).toContain("Pinterest to mymind");
+    expect(html).toContain("mygrate");
     expect(html).toContain("/assets/app/assets/entry.ts");
   });
 });

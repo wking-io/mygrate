@@ -1,6 +1,6 @@
-# Pinterest to mymind Agent Guide
+# mygrate Agent Guide
 
-This app uses the Remix 3 beta scaffold shape from `remix new`, adapted for a local Pinterest to mymind picker.
+This app uses the Remix 3 beta scaffold shape from `remix new`, adapted for mygrate's local picker.
 
 ## Commands
 
