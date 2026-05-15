@@ -2,6 +2,7 @@ import { Layer } from "effect";
 
 import { AppConfigLive } from "./Config";
 import { ImportServiceLive } from "./ImportService";
+import { MigratedPinsStoreLive } from "./MigratedPinsStore";
 import { MyMindClientLive } from "./MyMindClient";
 import { PinterestClientLive } from "./PinterestClient";
 import { PinterestMyMindSyncLive } from "./Sync";
@@ -15,6 +16,7 @@ export const ImportLive = ImportServiceLive.pipe(
 
 export const PickerLive = Layer.mergeAll(
   ClientsLive,
+  MigratedPinsStoreLive,
   ImportServiceLive.pipe(Layer.provide(ClientsLive)),
 ).pipe(Layer.provide(AppConfigLive));
 

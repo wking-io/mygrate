@@ -1,38 +1,173 @@
 # Pinterest to mymind
 
-Pulls Pins from Pinterest boards, downloads their images, and uploads those images to mymind.
+Pull Pins from Pinterest boards, download their images, and upload those images to mymind.
 
-## Setup
+The visual picker is a local Remix app in `app/`. Shared import, sync, Pinterest, mymind, config, and local storage logic lives in `core/`.
 
-Copy `.env.example` to `.env`, then fill in your Pinterest trial token and mymind access key values.
+## Prerequisites
 
-## Required environment
+- Bun `1.3.8` or newer.
+- Node.js `24.3.0` or newer.
+- A Pinterest API v5 access token with `boards:read` and `pins:read`.
+- A mymind access key ID and secret.
+
+The package manager is Bun, but the Remix web server runs through Node via `tsx` because `remix/node-serve` expects a Node runtime.
+
+## Local Setup
+
+1. Clone the repo and enter it:
+
+```sh
+git clone https://github.com/wking-io/pinterest-mymind.git
+cd pinterest-mymind
+```
+
+2. Install dependencies:
+
+```sh
+bun install
+```
+
+3. Create your local environment file:
+
+```sh
+cp .env.example .env
+```
+
+4. Fill in the required values in `.env`:
+
+```sh
+PINTEREST_ACCESS_TOKEN=
+MYMIND_ACCESS_KEY_ID=
+MYMIND_ACCESS_KEY_SECRET=
+```
+
+`MYMIND_ACCESS_KEY_SECRET` should be the base64-encoded mymind access key secret.
+
+5. Optionally limit the import while testing:
+
+```sh
+DRY_RUN=1
+PINTEREST_MAX_PINS=5
+```
+
+`DRY_RUN=1` lets you exercise the flow without writing to mymind.
+
+## Environment Variables
+
+Required:
 
 - `PINTEREST_ACCESS_TOKEN`: Pinterest API v5 bearer token with `boards:read` and `pins:read`.
 - `MYMIND_ACCESS_KEY_ID`: mymind access key `kid`.
 - `MYMIND_ACCESS_KEY_SECRET`: mymind base64-encoded access key secret.
 
-## Optional environment
+Optional:
 
-- `PINTEREST_BOARD_IDS`: comma-separated Pinterest board IDs. When omitted, all accessible boards are synced.
+- `PINTEREST_BOARD_IDS`: comma-separated Pinterest board IDs. When omitted, all accessible boards are used.
 - `PINTEREST_BOARD_PRIVACY`: one of `PUBLIC`, `PROTECTED`, or `SECRET` when listing boards.
+- `PINTEREST_PAGE_SIZE`: Pinterest pagination page size. Defaults to `250` and is capped at `250`.
+- `PINTEREST_MAX_PINS`: stop after this many Pins across all selected boards.
 - `MYMIND_SPACE_IDS`: comma-separated mymind space IDs to add uploaded images to.
 - `MYMIND_TAGS`: comma-separated tags added to every uploaded image. Defaults to `pinterest`.
 - `MYMIND_USER_AGENT`: user agent sent to mymind. Defaults to `creative-agent-pinterest-mymind/0.1`.
-- `PINTEREST_PAGE_SIZE`: page size for Pinterest pagination. Defaults to `250`.
-- `PINTEREST_MAX_PINS`: stop after this many Pins across all boards.
-- `DRY_RUN`: set to `1` to list work without writing to mymind.
+- `MIGRATED_PINS_PATH`: local JSON file used by the picker to track imported Pin IDs. Defaults to `.data/migrated-pins.json`.
+- `DRY_RUN`: set to `1`, `true`, or `yes` to list import work without writing to mymind.
+- `PICKER_PORT`: local picker port. Defaults to `3421`.
+- `PORT`: server port for the Remix app. Takes precedence over `PICKER_PORT`.
 
-## Run
+## Run The Visual Picker
 
-```sh
-bun run sync
-```
-
-## Visual picker
+Start the local picker:
 
 ```sh
 bun run picker
 ```
 
-Then open `http://localhost:3421`. Set `PICKER_PORT` to use another port.
+Then open:
+
+```text
+http://localhost:3421
+```
+
+Use the picker to choose a board, select Pins, and import them. Imported Pin IDs are stored locally in `.data/migrated-pins.json` by default. The picker hides migrated Pins unless you switch the filter to `Migrated` or `All`.
+
+For UI development, use the watched server:
+
+```sh
+bun run dev
+```
+
+## Run The CLI Sync
+
+To import from configured boards without using the picker:
+
+```sh
+bun run sync
+```
+
+When `PINTEREST_BOARD_IDS` is unset, the sync visits every accessible board. Use `PINTEREST_MAX_PINS` and `DRY_RUN=1` when testing against real accounts.
+
+## Test
+
+Run the offline test suite:
+
+```sh
+bun run test
+```
+
+Run TypeScript checks:
+
+```sh
+bun run typecheck
+```
+
+Before opening a PR or publishing changes, run both:
+
+```sh
+bun run typecheck
+bun run test
+```
+
+The tests mock external network calls, so they should not write to Pinterest or mymind.
+
+## Project Structure
+
+- `app/`: Remix web app, routes, controllers, rendering, browser entrypoint, and picker UI.
+- `core/`: shared business logic and integrations used by both the picker and CLI sync.
+- `test/`: offline tests for storage, clients, importing, sync behavior, and Remix routing.
+- `.data/`: local-only runtime state. This is gitignored.
+- `.agents/skills/remix/`: Remix 3 beta guidance from the official scaffold.
+
+## Local Migrated Pin Storage
+
+The picker records successfully imported non-dry-run Pin IDs in:
+
+```text
+.data/migrated-pins.json
+```
+
+The file shape is:
+
+```json
+{
+  "migratedPinIds": ["439804719884798227"]
+}
+```
+
+This file is intentionally local-only and ignored by git. To use a different path, set `MIGRATED_PINS_PATH`.
+
+## Troubleshooting
+
+If the picker fails to start because the port is in use, choose another port:
+
+```sh
+PICKER_PORT=3422 bun run picker
+```
+
+If the picker reports an authentication or config error, check that `.env` exists and contains the three required credential values.
+
+If you are testing import behavior for the first time, start with:
+
+```sh
+DRY_RUN=1 PINTEREST_MAX_PINS=5 bun run sync
+```
