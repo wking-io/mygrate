@@ -6,4 +6,5 @@ export const routes = route({
   pins: get("/api/boards/:boardId/pins"),
   importPins: post("/api/import"),
   home: "/",
+  board: get("/boards/:boardId"),
 });

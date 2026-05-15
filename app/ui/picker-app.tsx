@@ -1,4 +1,6 @@
-import { clientEntry, on, type Handle, type RemixNode } from "remix/ui";
+import { clientEntry, link, navigate, on, type Handle, type RemixNode } from "remix/ui";
+
+import { routes } from "../routes.ts";
 
 type BoardView = {
   id: string;
@@ -28,6 +30,10 @@ type ImportedPin = {
   issues?: ImportIssue[];
 };
 
+type PickerAppProps = {
+  selectedBoardId?: string;
+};
+
 type Filter = "unmigrated" | "migrated" | "all";
 
 const filters: Array<{ value: Filter; label: string }> = [
@@ -38,9 +44,9 @@ const filters: Array<{ value: Filter; label: string }> = [
 
 export const PickerApp = clientEntry(
   import.meta.url + "#PickerApp",
-  function PickerApp(handle: Handle) {
+  function PickerApp(handle: Handle<PickerAppProps>) {
     if (typeof window === "undefined") {
-      return () => renderShell(serverState());
+      return () => renderShell(serverState(handle.props.selectedBoardId));
     }
 
     let boards: BoardView[] = [];
@@ -70,8 +76,13 @@ export const PickerApp = clientEntry(
         boards = body.boards;
         status = "Ready";
         handle.update();
-        if (boards[0]) {
-          await loadPins(boards[0]);
+
+        let selectedBoardId = handle.props.selectedBoardId;
+        if (selectedBoardId) {
+          let board = findBoard(selectedBoardId) ?? { id: selectedBoardId, name: selectedBoardId };
+          await loadPins(board);
+        } else if (boards[0]) {
+          await navigate(routes.board.href({ boardId: boards[0].id }), { history: "replace" });
         } else {
           message = "No boards returned by Pinterest.";
           handle.update();
@@ -110,6 +121,10 @@ export const PickerApp = clientEntry(
         loading = false;
         handle.update();
       }
+    }
+
+    function findBoard(boardId: string) {
+      return boards.find((board) => board.id === boardId);
     }
 
     function visiblePins() {
@@ -219,10 +234,10 @@ function readStoredFilter(): Filter {
     : "unmigrated";
 }
 
-function serverState(): PickerState {
+function serverState(selectedBoardId?: string): PickerState {
   return {
     boards: [],
-    currentBoard: undefined,
+    currentBoard: selectedBoardId ? { id: selectedBoardId, name: selectedBoardId } : undefined,
     pins: [],
     visiblePins: [],
     selected: new Set(),
@@ -269,15 +284,14 @@ function renderShell(state: PickerState): RemixNode {
         </div>
         <div className="board-list">
           {state.boards.map((board) => (
-            <button
+            <a
               className={`board-button${state.currentBoard?.id === board.id ? " active" : ""}`}
+              href={routes.board.href({ boardId: board.id })}
               key={board.id}
-              mix={state.loadPins ? on("click", () => state.loadPins?.(board)) : undefined}
-              type="button"
+              mix={link(routes.board.href({ boardId: board.id }))}
             >
               <strong>{board.name}</strong>
-              <span className="board-id">{board.id}</span>
-            </button>
+            </a>
           ))}
         </div>
       </aside>
@@ -342,8 +356,8 @@ function renderShell(state: PickerState): RemixNode {
             ))}
           </div>
         ) : undefined}
-        <section className="grid" aria-live="polite">
-          {state.visiblePins.map((pin) => renderPinCard(pin, state))}
+        <section className="pin-scroll" aria-live="polite">
+          <div className="grid">{state.visiblePins.map((pin) => renderPinCard(pin, state))}</div>
         </section>
       </main>
     </div>

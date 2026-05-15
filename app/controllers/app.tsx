@@ -7,11 +7,21 @@ import { render } from "../utils/render.tsx";
 
 export const app: BuildAction<"GET", typeof routes.home> = {
   handler({ request }) {
+    return renderApp(request);
+  },
+};
+
+export const board: BuildAction<"GET", typeof routes.board> = {
+  handler({ request, params }) {
+    return renderApp(request, params.boardId);
+  },
+};
+
+function renderApp(request: Request, selectedBoardId?: string) {
     return render(
       <Document title="mygrate">
-        <PickerApp />
+        <PickerApp selectedBoardId={selectedBoardId} />
       </Document>,
       request,
     );
-  },
-};
+}
